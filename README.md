@@ -1,4 +1,4 @@
-# HOTools -- Header-Only Tools
+# HOTools - Header-Only Tools
 Don't clone this repository! Simply copy the headers you need into your project. Examples are available in the *.example.cc files.
 
 ## Contents

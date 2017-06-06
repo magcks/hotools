@@ -164,10 +164,13 @@ public:
 		int i;
 		if (type == LOPT) {
 			curopt += 2;
-			std::string lopt(curopt);
+			int len;
+			for (len = 0; curopt[len] && curopt[len] != '='; ++len);
+			std::string lopt(curopt, len);
+			curopt += len + (curopt[len] == '=' ? 1 : 0);
 			i = lopts.find(lopt) != lopts.end() ? lopts[lopt] : invalid;
 			if (i == invalid) err(E_INVALID_LOPT);
-			inc();
+			if (!*curopt) inc();
 		} else if (type == OPT) {
 			++curopt;
 			i = opts[*curopt];

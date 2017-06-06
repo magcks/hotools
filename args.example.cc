@@ -1,4 +1,4 @@
-// Compile: g++ -oargs args.usage.cc -std=c++11
+// Compile: g++ -oargs args.example.cc -std=c++11
 // Useage:  ./args -ab --intval 123 --type vb foo bar
 
 #include "args.h"

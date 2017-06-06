@@ -1,4 +1,4 @@
-// Compile: g++ -oprogress progress.usage.cc -std=c++11
+// Compile: g++ -oprogress progress.example.cc -std=c++11
 // Useage:  ./progress
 
 #include "progress.h"

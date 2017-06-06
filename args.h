@@ -66,7 +66,7 @@ private:
 		std::string lopt;
 		std::string descr;
 	};
-	enum Reason { E_CNT_LT, E_CNT_GT, E_invalid, E_INVALID_LOPT, E_CAST, E_ENUM };
+	enum Reason { E_CNT_LT, E_CNT_GT, E_INVALID, E_INVALID_LOPT, E_CAST, E_ENUM };
 	int argc;
 	char **argv;
 	int cur;
@@ -171,14 +171,14 @@ public:
 		} else if (type == OPT) {
 			++curopt;
 			i = opts[*curopt];
-			if (i == invalid) err(E_invalid);
+			if (i == invalid) err(E_INVALID);
 			++curopt;
 			val_read = false;
 			if (!*curopt) inc();
 		} else if (!val_read) {
 			// last value was not read: assume boolean -> no need for additional dash
 			i = opts[*curopt];
-			if (i == invalid) err(E_invalid);
+			if (i == invalid) err(E_INVALID);
 			++curopt;
 			if (!*curopt) inc();
 		} else {
@@ -240,7 +240,7 @@ private:
 		case E_CNT_GT:
 			std::cerr << "Error: Too much non-optional arguments" << std::endl;
 			break;
-		case E_invalid:
+		case E_INVALID:
 			std::cerr << "Error: Invalid option " << *curopt << std::endl;
 			break;
 		case E_INVALID_LOPT:

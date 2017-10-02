@@ -37,6 +37,7 @@
 #include <ostream>
 #include <cstring>
 #include <thread>
+#include <future>
 #include <atomic>
 #include <chrono>
 #include <iostream>
@@ -55,10 +56,10 @@ struct _winsize {
 	std::atomic<uint32_t> cols;
 	std::atomic<uint32_t> rows;
 };
-_winsize WINSIZE;
+static _winsize WINSIZE;
 
 #ifdef _WIN32
-void get_win_size(_winsize &size)
+inline void get_win_size(_winsize &size)
 {
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 
@@ -67,7 +68,7 @@ void get_win_size(_winsize &size)
 	size.rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
 }
 #else
-void get_win_size(_winsize &size)
+inline void get_win_size(_winsize &size)
 {
 	struct winsize win;
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &win);
@@ -76,12 +77,12 @@ void get_win_size(_winsize &size)
 }
 #endif
 
-void on_resize(int)
+static void on_resize(int)
 {
 	get_win_size(WINSIZE);
 }
 
-void init_signal()
+inline void init_signal()
 {
 #ifndef _WIN32
 	signal(SIGWINCH, on_resize);
@@ -89,109 +90,115 @@ void init_signal()
 	on_resize(0);
 }
 
-static std::atomic<uint32_t> cur, count;
 enum ProgState { CREATED, RUNNING, TERM };
-static std::atomic<ProgState> state;
-static std::ostream *progos;
-inline void printprog()
+struct ProgressData {
+	std::atomic<uint32_t> cur, count;
+	std::atomic<ProgState> state;
+	std::future<void> future;
+};
+
+inline void printprog(ProgressData *pd)
 {
-	float percent = (float)cur / (float)count;
+	float percent = (float)pd->cur / (float)pd->count;
 
 	int barwidth = WINSIZE.cols - 9;
 
-	*progos << "[";
+	std::cout << "[";
 	int pos = barwidth * percent;
 	for (int i = 0; i < barwidth; ++i) {
-		if (i < pos) *progos << "=";
-		else if (i == pos) *progos << ">";
-		else *progos << " ";
+		if (i < pos) std::cout << "=";
+		else if (i == pos) std::cout << ">";
+		else std::cout << " ";
 	}
-	*progos << "] " << (int)(percent * 100.0f) << " %";
-	*progos << '\r';
-	progos->flush();
+	std::cout << "] " << (int)(percent * 100.0f) << " %";
+	std::cout << '\r';
+	std::cout.flush();
 }
-static void progthread()
+static void progthread(ProgressData *pd)
 {
 	while (1) {
-		if (state == TERM) break;
-		if (state == RUNNING) printprog();
+		if (pd->state == RUNNING || pd->state == TERM) printprog(pd);
+		if (pd->state == TERM) {
+			std::cout << std::endl;
+			break;
+		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(16)); // ~60fps
 	}
 }
 
-void createprog(std::ostream &os)
+inline void createprog(ProgressData *pd)
 {
-	progos = &os;
 	init_signal();
-	state = CREATED;
+	pd->state = CREATED;
+	pd->future = std::async(std::launch::async, progthread, pd);
 }
 
-void startprog(uint32_t c = 0)
+inline void startprog(ProgressData *pd, uint32_t c = 0)
 {
-	cur = 0; count = c;
-	state = RUNNING;
-	std::thread(progthread).detach();
+	pd->cur = 0;
+	pd->count = c;
+	pd->state = RUNNING;
 }
-void endprog()
+inline void endprog(ProgressData *pd)
 {
-	cur = (uint32_t)count;
-	state = TERM;
-	printprog();
-	*progos << std::endl;
+	pd->cur = (uint32_t)pd->count;
+	pd->state = TERM;
+	pd->future.wait();
 }
-bool progterm()
+inline bool progterm(ProgressData *pd)
 {
-	return state == TERM;
+	return pd->state == TERM;
 }
-void setprog(uint32_t cu)
+inline void setprog(ProgressData *pd, uint32_t cu)
 {
-	if (cu > count) count = cu;
-	cur = cu;
+	if (cu > pd->count) pd->count = cu;
+	pd->cur = cu;
 }
-void setprog(uint32_t cu, uint32_t co)
+inline void setprog(ProgressData *pd, uint32_t cu, uint32_t co)
 {
-	cur = cu;
-	count = co;
+	pd->cur = cu;
+	pd->count = co;
 }
 
 // simple progress handle
 struct handle {
-	handle(std::ostream &os = std::cout)
+	ProgressData pd;
+	inline handle()
 	{
-		createprog(os);
+		createprog(&pd);
 	}
-	handle(std::ostream &os, uint32_t c) : handle(os)
+	inline handle(uint32_t c) : handle()
 	{
 		start(c);
 	}
-	~handle()
+	inline ~handle()
 	{
 		end();
 	}
-	void start(uint32_t c)
+	inline void start(uint32_t c)
 	{
-		startprog(c);
+		startprog(&pd, c);
 	}
-	void end()
+	inline void end()
 	{
-		if (!progterm()) endprog();
+		if (!progterm(&pd)) endprog(&pd);
 	}
-	void init(uint32_t co)
+	inline void init(uint32_t co)
 	{
 	}
-	void operator()(uint32_t cu)
+	inline void operator()(uint32_t cu)
 	{
-		setprog(cu);
+		setprog(&pd, cu);
 	}
-	void operator()(uint32_t cu, uint32_t co)
+	inline void operator()(uint32_t cu, uint32_t co)
 	{
-		setprog(cu, co);
+		setprog(&pd, cu, co);
 	}
 };
 
 // write progress to void
 struct voidhandle {
-	voidhandle(std::ostream& = std::cout, uint32_t = 0) {}
+	voidhandle(uint32_t = 0) {}
 	void start(uint32_t) {}
 	void end() {}
 	void operator()(uint32_t, uint32_t = 0) {}

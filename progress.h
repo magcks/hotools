@@ -198,10 +198,10 @@ struct handle {
 
 // write progress to void
 struct voidhandle {
-	voidhandle(uint32_t = 0) {}
-	void start(uint32_t) {}
-	void end() {}
-	void operator()(uint32_t, uint32_t = 0) {}
+	inline voidhandle(uint32_t = 0) {}
+	inline void start(uint32_t) {}
+	inline void end() {}
+	inline void operator()(uint32_t, uint32_t = 0) {}
 };
 
 }

@@ -1,4 +1,4 @@
-// Compile: g++ -oprogress progress.example.cc -std=c++11
+// Compile: g++ -oprogress progress.example.cc -std=c++11 -pthread
 // Useage:  ./progress
 
 #include "progress.h"

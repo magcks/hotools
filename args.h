@@ -68,9 +68,9 @@ private:
 	};
 	enum Reason { E_CNT_LT, E_CNT_GT, E_INVALID, E_INVALID_LOPT, E_CAST, E_ENUM };
 	int argc;
-	char **argv;
+	const char **argv;
 	int cur;
-	char *curopt;
+	const char *curopt;
 	int nonopt_cur;
 	int nonopt_min, nonopt_max;
 	int opts[256];
@@ -85,7 +85,7 @@ private:
 	std::ostream &os;
 
 public:
-	inline parser(int _argc, char **_argv, const std::string &_description = "", std::ostream &_os = std::cout) : argc(_argc), argv(_argv), cur(1), id(0), curopt(argv[cur]), nonopt_cur(0), maxw(0), description(_description), val_read(true), os(_os)
+	inline parser(int _argc, const char **_argv, const std::string &_description = "", std::ostream &_os = std::cout) : argc(_argc), argv(_argv), cur(1), id(0), curopt(argv[cur]), nonopt_cur(0), maxw(0), description(_description), val_read(true), os(_os)
 	{
 		for (int i = 0; i < 256; ++i) opts[i] = invalid;
 		range(0);
@@ -203,7 +203,7 @@ public:
 		T v;
 		try {
 			if (!curopt) err(E_CNT_LT);
-			else v = Conv<T, char*>()(curopt);
+			else v = Conv<T, const char*>()(curopt);
 		} catch (...) {
 			err(E_CAST);
 			return T();

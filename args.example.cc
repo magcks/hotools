@@ -14,7 +14,7 @@ struct Conf {
 	SomeEnum enumval;
 	std::vector<std::string> strs;
 
-	inline Conf(int argc, char **argv) : boolval1(false), boolval2(false), intval(-1), enumval(NONE)
+	inline Conf(int argc, const char **argv) : boolval1(false), boolval2(false), intval(-1), enumval(NONE)
 	{
 // 		using namespace std::string_literals;
 		args::parser args(argc, argv, "A short description"/*, std::cout*/);
@@ -35,7 +35,7 @@ struct Conf {
 	}
 };
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	Conf conf(argc, argv);
 
